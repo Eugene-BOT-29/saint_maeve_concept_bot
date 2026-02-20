@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 # Состояния для диалога
 GET_CONTACT = 1
 
-# Словарь с призами (ОБНОВЛЕНО)
+# Словарь с призами
 PRIZES = {
     1: "скидка 1000 рублей на любую покупку 🎁",
     2: "скидка 1500 рублей на любую покупку 🎁",
@@ -22,16 +22,14 @@ PRIZES = {
 }
 
 # Словарь для отслеживания, кто уже бросил кубик
-# (хранится в памяти, при перезапуске бота сбрасывается)
 user_rolled = {}
 
-# Команда /start (ТЕКСТ ОБНОВЛЕН)
+# Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     
     # Проверяем, бросал ли уже пользователь кубик
     if user_id in user_rolled and user_rolled[user_id]:
-        # Если уже бросал, показываем только кнопку с номером (без кубика)
         await update.message.reply_text(
             "Вы уже участвовали в розыгрыше! 🎲\n\n"
             "Если Вы ещё не оставили номер телефона, нажмите кнопку ниже, чтобы получить Ваш подарок 👇"
@@ -44,7 +42,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Нажмите кнопку:", reply_markup=contact_keyboard)
         return GET_CONTACT
     
-    # Новый пользователь — показываем полное приветствие
+    # Новый пользователь
     welcome_text = (
         "Добро пожаловать в розыгрыш от концепт-стора российских дизайнеров SAINT MAEVE Concept!\n\n"
         "Мы рады, что Вас заинтересовал наш флаер, и поэтому мы предлагаем Вам сыграть в игру 🎲, "
@@ -59,37 +57,37 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(welcome_text, reply_markup=reply_markup)
 
-# Бросок кубика (ТЕКСТ ПОДАРКОВ ОБНОВЛЕН + ЗАЩИТА ОТ ПОВТОРА)
+# Бросок кубика
 async def roll_dice_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
     user_id = update.effective_user.id
     
-    # Проверяем, не бросал ли уже пользователь кубик
+    # Проверяем, не бросал ли уже
     if user_id in user_rolled and user_rolled[user_id]:
         await query.message.reply_text("Вы уже бросали кубик! Используйте кнопку ниже, чтобы получить подарок.")
         return
     
-    # Бросаем кубик (генерируем число от 1 до 6)
+    # Бросаем кубик
     dice_result = random.randint(1, 6)
     prize = PRIZES[dice_result]
     
-    # Запоминаем, что пользователь бросил кубик
+    # Запоминаем
     user_rolled[user_id] = True
     
-    # Сохраняем результат и приз в данные пользователя
+    # Сохраняем результат
     context.user_data['dice_result'] = dice_result
     context.user_data['prize'] = prize
     
-    # Формируем текст с подарком
+    # Текст с подарком
     result_text = (
         f"🎲 Тебе выпало число: {dice_result}\n\n"
         f"Твой подарок: {prize}\n\n"
         f"👇 Чтобы получить приз, нажми кнопку «Поделиться номером»"
     )
     
-    # Кнопка для отправки контакта
+    # Кнопка для контакта
     contact_keyboard = ReplyKeyboardMarkup(
         [[KeyboardButton("📞 Поделиться номером телефона", request_contact=True)]],
         resize_keyboard=True,
@@ -99,7 +97,7 @@ async def roll_dice_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await query.message.reply_text(result_text, reply_markup=contact_keyboard)
     return GET_CONTACT
 
-# Получение контакта (ФИНАЛЬНЫЙ ТЕКСТ ОБНОВЛЕН)
+# Получение контакта - ИСПРАВЛЕНО!
 async def get_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     contact = update.message.contact
     user = update.effective_user
@@ -110,42 +108,54 @@ async def get_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         prize = context.user_data.get('prize', 'Не определен')
         dice = context.user_data.get('dice_result', '?')
         
-        # Финальное сообщение (ОБНОВЛЕНО)
-        final_text = (
-            "Спасибо за участие в розыгрыше! \n\n"
-            "Вскоре наш менеджер свяжется с Вами по указанному номеру и уточнит, "
-            "когда Вам было бы удобно получить подарок. \n\n"
-            "А пока Вы можете подписаться на канал SAINT MAEVE Concept @saintmaeve_concept, "
-            "чтобы следить за новостями, или перейти на сайт saintmaeve.ru и выбрать свой новый образ!"
-        )
-        
-        # Убираем клавиатуру с кнопкой номера
+        # 1. СНАЧАЛА убираем клавиатуру с кнопкой номера
         await update.message.reply_text(
-            final_text,
+            "⏳ Обрабатываем ваш номер...",
             reply_markup=ReplyKeyboardMarkup.remove_keyboard()
         )
         
-        # Кнопки для перехода на канал и сайт
+        # 2. ПОТОМ отправляем финальное сообщение с благодарностью (ТВОЙ ТЕКСТ)
+        final_text = (
+            "Спасибо за участие в розыгрыше! 🎉\n\n"
+            "Вскоре наш менеджер свяжется с Вами по указанному номеру и уточнит, "
+            "когда Вам было бы удобно получить подарок.\n\n"
+            "А пока Вы можете подписаться на канал SAINT MAEVE Concept (@saintmaeve_concept), "
+            "чтобы следить за новостями, или перейти на сайт saintmaeve.ru и выбрать свой новый образ!"
+        )
+        await update.message.reply_text(final_text)
+        
+        # 3. Кнопки для перехода
         channel_keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("📱 Канал SAINT MAEVE", url="https://t.me/saintmaeve_concept")],
             [InlineKeyboardButton("🌐 Перейти на сайт", url="https://saintmaeve.ru")]
         ])
         await update.message.reply_text("Полезные ссылки:", reply_markup=channel_keyboard)
         
-        # Отправляем уведомление админу
-        admin_id = int(os.environ.get("ADMIN_ID", "0"))
-        admin_message = (
-            f"📞 Новая заявка с розыгрыша!\n"
-            f"Имя: {user.first_name}\n"
-            f"Username: @{user.username if user.username else 'нет'}\n"
-            f"Телефон: {phone_number}\n"
-            f"Результат кубика: {dice}\n"
-            f"Приз: {prize}"
-        )
-        try:
-            await context.bot.send_message(chat_id=admin_id, text=admin_message)
-        except Exception as e:
-            logger.error(f"Не удалось отправить админу: {e}")
+        # 4. Отправляем уведомление АДМИНУ (номер телефона) - ИСПРАВЛЕНО!
+        admin_id = os.environ.get("ADMIN_ID")
+        
+        # Проверяем, есть ли ADMIN_ID
+        if admin_id:
+            try:
+                admin_message = (
+                    f"📞 Новая заявка с розыгрыша!\n"
+                    f"Имя: {user.first_name}\n"
+                    f"Username: @{user.username if user.username else 'нет'}\n"
+                    f"Телефон: {phone_number}\n"
+                    f"Результат кубика: {dice}\n"
+                    f"Приз: {prize}"
+                )
+                await context.bot.send_message(chat_id=int(admin_id), text=admin_message)
+                logger.info(f"Уведомление отправлено админу {admin_id}")
+            except Exception as e:
+                logger.error(f"Не удалось отправить админу: {e}")
+        else:
+            # Если ADMIN_ID не задан, пишем в логи
+            logger.warning("ADMIN_ID не задан! Номер телефона никуда не отправлен.")
+            # Для отладки - отправим самому пользователю (чтобы увидеть номер)
+            await update.message.reply_text(
+                f"[DEBUG] Админ не настроен. Номер для теста: {phone_number}"
+            )
     
     return ConversationHandler.END
 
@@ -158,7 +168,6 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Используйте команду /start для участия в розыгрыше.")
 
 def main():
-    # Получаем токен из переменных окружения
     token = os.environ.get("BOT_TOKEN")
     if not token:
         logger.error("Нет токена! Укажи BOT_TOKEN в переменных окружения.")
@@ -179,7 +188,7 @@ def main():
     application.add_handler(conv_handler)
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
     
-    print("Бот SAINT MAEVE запущен...")
+    print("🤖 Бот SAINT MAEVE запущен...")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
