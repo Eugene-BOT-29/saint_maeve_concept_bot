@@ -75,44 +75,42 @@ async def get_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         phone = contact.phone_number
         prize = context.user_data.get('prize', 'Не определен')
         
-        # Просто убираем клавиатуру
-        await update.message.reply_text(
-            "Спасибо! Обрабатываем...",
-            reply_markup=ReplyKeyboardMarkup.remove_keyboard()
-        )
-        
-        # ТВОЙ ФИНАЛЬНЫЙ ТЕКСТ
-        final_text = (
-            "Спасибо за участие в розыгрыше! 🎉\n\n"
-            "Вскоре наш менеджер свяжется с Вами по указанному номеру и уточнит, "
-            "когда Вам было бы удобно получить подарок.\n\n"
-            "А пока Вы можете подписаться на канал SAINT MAEVE Concept (@saintmaeve_concept), "
-            "чтобы следить за новостями, или перейти на сайт saintmaeve.ru и выбрать свой новый образ!"
-        )
-        await update.message.reply_text(final_text)
-        
-        # Кнопки
-        buttons = InlineKeyboardMarkup([
-            [InlineKeyboardButton("📱 Канал", url="https://t.me/saintmaeve_concept")],
-            [InlineKeyboardButton("🌐 Сайт", url="https://saintmaeve.ru")]
-        ])
-        await update.message.reply_text("Полезные ссылки:", reply_markup=buttons)
-        
-        # Отправка админу - ПРОСТОЙ ВАРИАНТ
-        admin_id = os.environ.get("ADMIN_ID")
-        if admin_id:
-            try:
-                await context.bot.send_message(
-                    chat_id=int(admin_id),
-                    text=f"📞 Новая заявка!\nИмя: {user.first_name}\nТелефон: {phone}\nПриз: {prize}"
-                )
-                logger.info(f"Уведомление отправлено админу {admin_id}")
-            except Exception as e:
-                logger.error(f"Ошибка отправки админу: {e}")
-        else:
-            logger.warning("ADMIN_ID не задан")
-            # Отправляем тестовое сообщение самому пользователю
-            await update.message.reply_text(f"[ТЕСТ] Номер получен: {phone}")
+        try:
+            await update.message.reply_text(
+                "Спасибо! Обрабатываем...",
+                reply_markup=ReplyKeyboardMarkup.remove_keyboard()
+            )
+            
+            final_text = (
+                "Спасибо за участие в розыгрыше! 🎉\n\n"
+                "Вскоре наш менеджер свяжется с Вами по указанному номеру и уточнит, "
+                "когда Вам было бы удобно получить подарок.\n\n"
+                "А пока Вы можете подписаться на канал SAINT MAEVE Concept (@saintmaeve_concept), "
+                "чтобы следить за новостями, или перейти на сайт saintmaeve.ru и выбрать свой новый образ!"
+            )
+            await update.message.reply_text(final_text)
+            
+            buttons = InlineKeyboardMarkup([
+                [InlineKeyboardButton("📱 Канал", url="https://t.me/saintmaeve_concept")],
+                [InlineKeyboardButton("🌐 Сайт", url="https://saintmaeve.ru")]
+            ])
+            await update.message.reply_text("Полезные ссылки:", reply_markup=buttons)
+            
+            admin_id = os.environ.get("ADMIN_ID")
+            if admin_id:
+                try:
+                    await context.bot.send_message(
+                        chat_id=int(admin_id),
+                        text=f"📞 Новая заявка!\nИмя: {user.first_name}\nТелефон: {phone}\nПриз: {prize}"
+                    )
+                    logger.info(f"Уведомление отправлено админу {admin_id}")
+                except Exception as e:
+                    logger.error(f"Ошибка отправки админу: {e}")
+            else:
+                logger.warning("ADMIN_ID не задан")
+                await update.message.reply_text(f"[ТЕСТ] Номер получен: {phone}")
+        except Exception as e:
+            logger.error(f"Ошибка в get_contact: {e}")
     
     return ConversationHandler.END
 
