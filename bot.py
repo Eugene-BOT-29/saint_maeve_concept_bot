@@ -19,10 +19,10 @@ PRIZES = {
 
 user_rolled = {}
 
-# ===== ВАШИ ДАННЫЕ (вставлены напрямую) =====
+# ===== ВАШИ ДАННЫЕ =====
 BOT_TOKEN = "8095589286:AAEZ8NRbc2NKyY_b2RKjXlM0bTo2gzc2Q9k"
 ADMIN_ID = 5095030147
-# ============================================
+# =======================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -86,32 +86,23 @@ async def roll_dice_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await query.message.reply_text(result_text, reply_markup=contact_keyboard)
     return GET_CONTACT
 
-# ===== ПОЛНОСТЬЮ ИСПРАВЛЕННАЯ ФУНКЦИЯ =====
+# ===== ИСПРАВЛЕННАЯ ФУНКЦИЯ =====
 async def get_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Подробная диагностика
     logger.info("=== ФУНКЦИЯ get_contact ВЫЗВАНА ===")
-    logger.info(f"Тип update.message: {type(update.message)}")
     
-    # Отправляем пользователю диагностику
-    await update.message.reply_text("📞 Диагностика: функция вызвана. Проверяем contact...")
-    
-    # Проверяем наличие contact
     contact = update.message.contact
-    logger.info(f"contact объект: {contact}")
-    logger.info(f"contact is None? {contact is None}")
+    user = update.effective_user
     
     if contact:
-        logger.info("✅ contact существует!")
-        await update.message.reply_text("✅ contact получен, обрабатываем...")
-        
         phone = contact.phone_number
-        user = update.effective_user
         prize = context.user_data.get('prize', 'Не определен')
         
-        # Убираем клавиатуру
+        logger.info(f"✅ Получен номер: {phone} от пользователя {user.id}")
+        
+        # ИСПРАВЛЕНО: убираем клавиатуру правильным способом
         await update.message.reply_text(
             "⏳ Обрабатываем ваш номер...",
-            reply_markup=ReplyKeyboardMarkup.remove_keyboard()
+            reply_markup=None  # Просто убираем клавиатуру
         )
         
         # Финальный текст
@@ -119,14 +110,14 @@ async def get_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Спасибо за участие в розыгрыше! 🎉\n\n"
             "Вскоре наш менеджер свяжется с Вами по указанному номеру и уточнит, "
             "когда Вам было бы удобно получить подарок.\n\n"
-            "А пока Вы можете подписаться на канал SAINT MAEVE Concept (@stmaeve_concept), "
+            "А пока Вы можете подписаться на канал SAINT MAEVE Concept (@saintmaeve_concept), "
             "чтобы следить за новостями, или перейти на сайт saintmaeve.ru и выбрать свой новый образ!"
         )
         await update.message.reply_text(final_text)
         
         # Кнопки
         buttons = InlineKeyboardMarkup([
-            [InlineKeyboardButton("📱 Канал", url="https://t.me/stmaeve_concept")],
+            [InlineKeyboardButton("📱 Канал", url="https://t.me/saintmaeve_concept")],
             [InlineKeyboardButton("🌐 Сайт", url="https://saintmaeve.ru")]
         ])
         await update.message.reply_text("Полезные ссылки:", reply_markup=buttons)
@@ -138,20 +129,14 @@ async def get_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 text=f"📞 Новая заявка!\nИмя: {user.first_name}\nТелефон: {phone}\nПриз: {prize}"
             )
             logger.info(f"✅ Уведомление отправлено админу {ADMIN_ID}")
-            await update.message.reply_text("✅ Уведомление администратору отправлено!")
         except Exception as e:
             logger.error(f"❌ Ошибка отправки админу: {e}")
-            await update.message.reply_text(f"❌ Ошибка отправки админу: {e}")
     else:
-        logger.error("❌ contact is None! Это объясняет, почему нет дальнейших действий.")
-        logger.error(f"Полное содержимое update.message: {update.message}")
-        await update.message.reply_text(
-            "❌ Ошибка: не получен номер телефона. Попробуйте ещё раз.\n"
-            "Убедитесь, что при нажатии кнопки вы нажали «ДА» в окне Telegram."
-        )
+        logger.error("❌ contact is None")
+        await update.message.reply_text("Ошибка: не получен номер телефона.")
     
     return ConversationHandler.END
-# ===== КОНЕЦ ИСПРАВЛЕННОЙ ФУНКЦИИ =====
+# ===== КОНЕЦ ИСПРАВЛЕНИЯ =====
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("До свидания!")
