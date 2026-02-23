@@ -110,14 +110,14 @@ async def get_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Спасибо за участие в розыгрыше! 🎉\n\n"
             "Вскоре наш менеджер свяжется с Вами по указанному номеру и уточнит, "
             "когда Вам было бы удобно получить подарок.\n\n"
-            "А пока Вы можете подписаться на канал SAINT MAEVE Concept (@saintmaeve_concept), "
+            "А пока Вы можете подписаться на канал SAINT MAEVE Concept (@stmaeve_concept), "
             "чтобы следить за новостями, или перейти на сайт saintmaeve.ru и выбрать свой новый образ!"
         )
         await update.message.reply_text(final_text)
         
         # Кнопки
         buttons = InlineKeyboardMarkup([
-            [InlineKeyboardButton("📱 Канал", url="https://t.me/saintmaeve_concept")],
+            [InlineKeyboardButton("📱 Канал", url="https://t.me/stmaeve_concept")],
             [InlineKeyboardButton("🌐 Сайт", url="https://saintmaeve.ru")]
         ])
         await update.message.reply_text("Полезные ссылки:", reply_markup=buttons)
