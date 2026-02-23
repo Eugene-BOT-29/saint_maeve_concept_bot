@@ -27,6 +27,7 @@ ADMIN_ID = 5095030147
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     logger.info(f"Пользователь {user_id} запустил бота")
+    
     if user_id in user_rolled and user_rolled[user_id]:
         await update.message.reply_text(
             "Вы уже участвовали в розыгрыше! 🎲\n\n"
@@ -39,6 +40,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         await update.message.reply_text("Нажмите кнопку:", reply_markup=contact_keyboard)
         return GET_CONTACT
+    
     welcome_text = (
         "Добро пожаловать в розыгрыш от концепт-стора российских дизайнеров SAINT MAEVE Concept!\n\n"
         "Мы рады, что Вас заинтересовал наш флаер, и поэтому мы предлагаем Вам сыграть в игру 🎲, "
@@ -55,43 +57,63 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def roll_dice_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+    
     user_id = update.effective_user.id
     logger.info(f"Пользователь {user_id} бросил кубик")
+    
     if user_id in user_rolled and user_rolled[user_id]:
         await query.message.reply_text("Вы уже бросали кубик! Используйте кнопку ниже, чтобы получить подарок.")
         return
+    
     dice_result = random.randint(1, 6)
     prize = PRIZES[dice_result]
+    
     user_rolled[user_id] = True
     context.user_data['prize'] = prize
+    
     result_text = (
         f"🎲 Тебе выпало число: {dice_result}\n\n"
         f"Твой подарок: {prize}\n\n"
         f"👇 Чтобы получить приз, нажми кнопку «Поделиться номером»"
     )
+    
     contact_keyboard = ReplyKeyboardMarkup(
         [[KeyboardButton("📞 Поделиться номером телефона", request_contact=True)]],
         resize_keyboard=True,
         one_time_keyboard=True
     )
+    
     await query.message.reply_text(result_text, reply_markup=contact_keyboard)
     return GET_CONTACT
 
+# ===== ПОЛНОСТЬЮ ИСПРАВЛЕННАЯ ФУНКЦИЯ =====
 async def get_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # ОТЛАДКА: сразу пишем в лог и шлём сообщение пользователю
-    logger.info("Функция get_contact вызвана")
-    await update.message.reply_text("📞 Отладка: функция получения контакта сработала!")
-
+    # Подробная диагностика
+    logger.info("=== ФУНКЦИЯ get_contact ВЫЗВАНА ===")
+    logger.info(f"Тип update.message: {type(update.message)}")
+    
+    # Отправляем пользователю диагностику
+    await update.message.reply_text("📞 Диагностика: функция вызвана. Проверяем contact...")
+    
+    # Проверяем наличие contact
     contact = update.message.contact
-    user = update.effective_user
+    logger.info(f"contact объект: {contact}")
+    logger.info(f"contact is None? {contact is None}")
+    
     if contact:
+        logger.info("✅ contact существует!")
+        await update.message.reply_text("✅ contact получен, обрабатываем...")
+        
         phone = contact.phone_number
+        user = update.effective_user
         prize = context.user_data.get('prize', 'Не определен')
+        
         # Убираем клавиатуру
         await update.message.reply_text(
             "⏳ Обрабатываем ваш номер...",
             reply_markup=ReplyKeyboardMarkup.remove_keyboard()
         )
+        
         # Финальный текст
         final_text = (
             "Спасибо за участие в розыгрыше! 🎉\n\n"
@@ -101,25 +123,35 @@ async def get_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "чтобы следить за новостями, или перейти на сайт saintmaeve.ru и выбрать свой новый образ!"
         )
         await update.message.reply_text(final_text)
+        
         # Кнопки
         buttons = InlineKeyboardMarkup([
             [InlineKeyboardButton("📱 Канал", url="https://t.me/saintmaeve_concept")],
             [InlineKeyboardButton("🌐 Сайт", url="https://saintmaeve.ru")]
         ])
         await update.message.reply_text("Полезные ссылки:", reply_markup=buttons)
-        # Отправка админу (используем фиксированный ADMIN_ID)
+        
+        # Отправка админу
         try:
             await context.bot.send_message(
                 chat_id=ADMIN_ID,
                 text=f"📞 Новая заявка!\nИмя: {user.first_name}\nТелефон: {phone}\nПриз: {prize}"
             )
-            logger.info(f"Уведомление отправлено админу {ADMIN_ID}")
+            logger.info(f"✅ Уведомление отправлено админу {ADMIN_ID}")
+            await update.message.reply_text("✅ Уведомление администратору отправлено!")
         except Exception as e:
-            logger.error(f"Ошибка отправки админу: {e}")
+            logger.error(f"❌ Ошибка отправки админу: {e}")
+            await update.message.reply_text(f"❌ Ошибка отправки админу: {e}")
     else:
-        logger.warning("get_contact: contact is None")
-        await update.message.reply_text("Не удалось получить номер. Попробуйте ещё раз.")
+        logger.error("❌ contact is None! Это объясняет, почему нет дальнейших действий.")
+        logger.error(f"Полное содержимое update.message: {update.message}")
+        await update.message.reply_text(
+            "❌ Ошибка: не получен номер телефона. Попробуйте ещё раз.\n"
+            "Убедитесь, что при нажатии кнопки вы нажали «ДА» в окне Telegram."
+        )
+    
     return ConversationHandler.END
+# ===== КОНЕЦ ИСПРАВЛЕННОЙ ФУНКЦИИ =====
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("До свидания!")
@@ -132,15 +164,18 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
+    
     conv_handler = ConversationHandler(
         entry_points=[CallbackQueryHandler(roll_dice_callback, pattern="^roll_dice$")],
         states={GET_CONTACT: [MessageHandler(filters.CONTACT, get_contact)]},
         fallbacks=[CommandHandler("cancel", cancel)],
         allow_reentry=True,
     )
+    
     app.add_handler(CommandHandler("start", start))
     app.add_handler(conv_handler)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
+    
     print("✅ Бот SAINT MAEVE запущен и готов к работе!")
     app.run_polling()
 
