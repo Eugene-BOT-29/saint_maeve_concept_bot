@@ -66,9 +66,9 @@ async def roll_dice_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
     context.user_data['prize'] = prize
     
     result_text = (
-        f"🎲 Тебе выпало число: {dice_result}\n\n"
-        f"Твой подарок: {prize}\n\n"
-        f"👇 Чтобы получить приз, нажми кнопку «Поделиться номером»"
+        f"🎲 Вам выпало число: {dice_result}\n\n"
+        f"Ваш подарок: {prize}\n\n"
+        f"👇🏻 Чтобы получить приз, нажмите кнопку «Поделиться номером»"
     )
     
     contact_keyboard = ReplyKeyboardMarkup(
